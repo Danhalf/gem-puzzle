@@ -4,27 +4,37 @@ import {
   debounce,
   displayTime,
 } from './helpers';
+import { checkWin, isSolutionPossible } from './checkers';
 import { FIELD_SIZE, GAP, FILL_COLOR, COLOR, ZERO } from './constants';
 
-const { log: __ } = console;
-
-let turnCounter = 1;
-let gameTime = 0;
+let turnCounter = localStorage.getItem('turnCounter') || 0;
+let gameTime = localStorage.getItem('gameTime') || 0;
 
 export const renderCanvas = (selector = document.getElementById('app')) => {
   const { offsetWidth, offsetHeight } = document.body;
   const canvasSize = (offsetWidth + offsetHeight) / 2;
   const getCanvasSize = () => ~~canvasSize * 0.5;
-  //   __(canvasSize);
   selector.innerHTML = `
-<canvas id='canvas' width=${getCanvasSize()} height=${getCanvasSize()}>   
-</canvas>
-<section id='info'>
-   <div>Counts: <span id='counter'>0</span></div>
-   <div>Game time: <span id='time'>00:00</span></div>
-   <div></div>
-   <button id='shuffle'>Shuffle and start</button>
-</section>
+  <canvas 
+    id='canvas' 
+    width=${getCanvasSize()} 
+    height=${getCanvasSize()}>   
+  </canvas>
+  <section id='info'>
+    <div>Counts: <span id='counter'>${turnCounter}</span></div>
+    <div>Game time: <span id='time'>${displayTime(gameTime)}</span></div>
+    <ul class='game-mode'>
+      <li class='mode' data-mode='2'>2х2</li>
+      <li class='mode' data-mode='3'>3х3</li>
+      <li class='mode' data-mode='4'>4х4</li>
+      <li class='mode' data-mode='5'>5х5</li>
+      <li class='mode' data-mode='6'>6х6</li>
+      <li class='mode' data-mode='7'>7х7</li>
+      <li class='mode' data-mode='8'>8х8</li>
+    </ul>
+    </div>
+    <button id='shuffle'>Shuffle and start</button>
+  </section>
 `;
   canvas.style.width = canvas.width = getCanvasSize();
   canvas.style.height = canvas.height = getCanvasSize();
@@ -33,18 +43,34 @@ export const renderCanvas = (selector = document.getElementById('app')) => {
   initGame(CELL_SIZE);
 };
 
+const selectMode = () => {
+  const modes = document.querySelectorAll('.mode');
+  modes.forEach(e => {
+    e.addEventListener('click', () => {
+      FIELD_SIZE = e.dataset.mode
+    })
+  })
+}
+
+
 const clearGameData = () => {
-  turnCounter = 1;
+  turnCounter = 0;
   gameTime = 0;
 };
 
+
 const timer = setInterval(() => {
   const domTimer = document.getElementById('time');
+  let gameTime = localStorage.getItem('gameTime') || 0;
   gameTime++;
+  localStorage.setItem('gameTime', gameTime)
   domTimer.textContent = displayTime(gameTime);
 }, 1000);
 
 export const initGame = (CELL_SIZE) => {
+
+  selectMode()
+
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
   const domCounter = document.getElementById('counter');
@@ -56,21 +82,17 @@ export const initGame = (CELL_SIZE) => {
 
   let activeCell = null;
 
-  const getTurnCounter = (count) => {
-    turnCounter++;
-    domCounter.textContent = count;
+  const getTurnCounter = () => {
+    let turnCounter = localStorage.getItem('turnCounter') || 0;
+    localStorage.setItem('turnCounter', ++turnCounter);
+    domCounter.textContent = turnCounter;
   };
 
-  const checkWin = (combination, length = FIELD_SIZE ** 2 - 1) => {
-    const currentCombination = sliceArray(combination, FIELD_SIZE);
-    const winCombination = sliceArray(
-      [...Array.from({ length }, (_, i) => i + 1), 0],
-      FIELD_SIZE
-    );
-    return currentCombination.join`` === winCombination.join``;
-  };
+
 
   const fillField = () => {
+
+
     const cells = [];
     const rowValues = new Set();
     while (rowValues.size < FIELD_SIZE ** 2) {
@@ -79,6 +101,8 @@ export const initGame = (CELL_SIZE) => {
     }
 
     const filledCells = sliceArray(rowValues, FIELD_SIZE);
+
+    if (!isSolutionPossible(filledCells)) return fillField()
 
     filledCells.map((value, row) => {
       for (let column = 0; column < FIELD_SIZE; column++) {
@@ -91,13 +115,14 @@ export const initGame = (CELL_SIZE) => {
         });
       }
     });
-
     return cells;
   };
 
   const cells = JSON.parse(localStorage.getItem('cells')) || fillField();
+  console.log(isSolutionPossible(sliceArray(cells.map(e => e.value)), FIELD_SIZE))
 
   const draw = (cells) => {
+
     ctx.clearRect(ZERO, ZERO, canvas.width, canvas.height);
     for (const key in cells) {
       if (Object.hasOwnProperty.call(cells, key)) {
@@ -161,11 +186,15 @@ export const initGame = (CELL_SIZE) => {
     if (isNearZero) {
       zeroCell.value = value;
       activeCellValue.value = ZERO;
-      getTurnCounter(turnCounter);
+      getTurnCounter();
       localStorage.setItem('cells', JSON.stringify(cells));
       draw(cells);
       const cellsValues = cells.map(({ value }) => value);
-      __(checkWin(cellsValues));
+      if (checkWin(cellsValues)) {
+        clearGameData()
+        renderCanvas()
+        alert('Win')
+      }
     }
   });
 
@@ -173,6 +202,8 @@ export const initGame = (CELL_SIZE) => {
     const newCells = fillField();
     clearGameData();
     renderCanvas();
+    localStorage.setItem('turnCounter', 0);
+    localStorage.setItem('gameTime', 0);
     localStorage.setItem('cells', JSON.stringify(newCells));
     draw(newCells);
   });

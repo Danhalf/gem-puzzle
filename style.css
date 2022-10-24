@@ -96,6 +96,21 @@ button:focus-visible {
   height: 100%;
 }
 
+.game-mode {
+  display: flex;
+  list-style: none;
+  gap: 10px;
+  padding: 0;
+}
+
+.game-mode li {
+  cursor: pointer;
+}
+
+.game-mode li:hover {
+  text-decoration: underline;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
