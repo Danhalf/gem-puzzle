@@ -1,26 +1,17 @@
-import './style.css'
-import { initGame } from '/game'
-import { debounce } from './game/helpers'
+import './style.css';
+import { initGame, renderCanvas } from '/game';
+import { debounce } from './game/helpers';
 
-const app = document.querySelector('#app')
+const app = document.querySelector('#app');
 
-const { offsetWidth, offsetHeight } = document.body
-const canvasSize = (offsetWidth + offsetHeight) / 2
+const { offsetWidth, offsetHeight } = document.body;
+const canvasSize = (offsetWidth + offsetHeight) / 2;
 
-const getCanvasSize = () => ~~canvasSize * 0.5
+const getCanvasSize = () => ~~canvasSize * 0.5;
 
-app.innerHTML = `
-<canvas id='canvas' width=${getCanvasSize()} height=${getCanvasSize()}>   
-</canvas>
-<div>Counts: <span id='counter'>0</span></div>
-<div>Game time: <span id='time'>00:00</span></div>
-<button id='shuffle'>Shuffle and start</button>
-`
+renderCanvas(app);
 
-initGame(canvasSize)
-
-
-window.addEventListener('resize', debounce(() => initGame(canvasSize)))
-
-
-
+window.addEventListener(
+  'resize',
+  debounce(() => renderCanvas(app))
+);
