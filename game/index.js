@@ -43,40 +43,26 @@ export const renderCanvas = (selector = document.getElementById('app')) => {
   initGame(CELL_SIZE);
 };
 
-const selectMode = () => {
-  const modes = document.querySelectorAll('.mode');
-  modes.forEach(e => {
-    e.addEventListener('click', () => {
-      FIELD_SIZE = e.dataset.mode
-    })
-  })
-}
-
-
 const clearGameData = () => {
   turnCounter = 0;
   gameTime = 0;
 };
 
-
 const timer = setInterval(() => {
   const domTimer = document.getElementById('time');
   let gameTime = localStorage.getItem('gameTime') || 0;
   gameTime++;
-  localStorage.setItem('gameTime', gameTime)
+  localStorage.setItem('gameTime', gameTime);
   domTimer.textContent = displayTime(gameTime);
 }, 1000);
 
 export const initGame = (CELL_SIZE) => {
-
-  selectMode()
-
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
   const domCounter = document.getElementById('counter');
 
   const domShuffleButton = document.getElementById('shuffle');
-  clearGameData();
+  // clearGameData();
 
   timer;
 
@@ -88,11 +74,7 @@ export const initGame = (CELL_SIZE) => {
     domCounter.textContent = turnCounter;
   };
 
-
-
   const fillField = () => {
-
-
     const cells = [];
     const rowValues = new Set();
     while (rowValues.size < FIELD_SIZE ** 2) {
@@ -102,7 +84,7 @@ export const initGame = (CELL_SIZE) => {
 
     const filledCells = sliceArray(rowValues, FIELD_SIZE);
 
-    if (!isSolutionPossible(filledCells)) return fillField()
+    if (!isSolutionPossible(filledCells)) return fillField();
 
     filledCells.map((value, row) => {
       for (let column = 0; column < FIELD_SIZE; column++) {
@@ -119,10 +101,8 @@ export const initGame = (CELL_SIZE) => {
   };
 
   const cells = JSON.parse(localStorage.getItem('cells')) || fillField();
-  console.log(isSolutionPossible(sliceArray(cells.map(e => e.value)), FIELD_SIZE))
 
   const draw = (cells) => {
-
     ctx.clearRect(ZERO, ZERO, canvas.width, canvas.height);
     for (const key in cells) {
       if (Object.hasOwnProperty.call(cells, key)) {
@@ -148,6 +128,19 @@ export const initGame = (CELL_SIZE) => {
           y + CELL_SIZE / 4
         );
       }
+    }
+    const cellsValues = cells.map(({ value }) => value);
+    if (checkWin(cellsValues)) {
+      // const isNewGame = confirm(
+      //   `Hooray! You solved the puzzle in ${displayTime(
+      //     gameTime
+      //   )} and ${turnCounter} moves!`
+      // );
+      // if (isNewGame) {
+      //   restartGame();
+      // } else {
+      //   window.location.reload();
+      // }
     }
   };
 
@@ -190,15 +183,19 @@ export const initGame = (CELL_SIZE) => {
       localStorage.setItem('cells', JSON.stringify(cells));
       draw(cells);
       const cellsValues = cells.map(({ value }) => value);
-      if (checkWin(cellsValues)) {
-        clearGameData()
-        renderCanvas()
-        alert('Win')
-      }
+      // if (checkWin(cellsValues)) {
+      //   alert(
+      //     `Hooray! You solved the puzzle in ${displayTime(
+      //       gameTime
+      //     )} and ${turnCounter} moves!`
+      //   );
+      //   restartGame();
+      // }
     }
   });
 
-  domShuffleButton.addEventListener('click', () => {
+  const restartGame = () => {
+    ctx.clearRect(ZERO, ZERO, canvas.width, canvas.height);
     const newCells = fillField();
     clearGameData();
     renderCanvas();
@@ -206,6 +203,17 @@ export const initGame = (CELL_SIZE) => {
     localStorage.setItem('gameTime', 0);
     localStorage.setItem('cells', JSON.stringify(newCells));
     draw(newCells);
+  };
+
+  const modes = document.querySelectorAll('.mode');
+  modes.forEach((e) => {
+    e.addEventListener('click', () => {
+      draw();
+      localStorage.setItem('fieldSize', e.dataset.mode);
+      restartGame();
+    });
   });
+
+  domShuffleButton.addEventListener('click', restartGame);
   draw(cells);
 };
